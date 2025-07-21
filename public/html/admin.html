@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin - Conferência de Estoque</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+    <header>
+        <h1>Painel Admin</h1>
+        <button id="btnVoltarHub">Voltar ao Hub</button>
+    </header>
+    <section>
+        <h2>Importar Base de Produtos (.xlsx)</h2>
+        <input type="file" id="inputXLSX" accept=".xlsx" />
+        <button id="btnImportarBase">Importar</button>
+    </section>
+    <section>
+        <h2>Gerenciar Contagens</h2>
+        <div id="controlesContagem"></div>
+    </section>
+    <section>
+        <h2>Cadastro de Usuários</h2>
+        <form id="formCadastroUsuario">
+            <label for="novoUsuario">Usuário:</label>
+            <input type="text" id="novoUsuario" name="novoUsuario" required />
+            <label for="novaSenha">Senha:</label>
+            <input type="password" id="novaSenha" name="novaSenha" required />
+            <label for="tipoUsuario">Tipo:</label>
+            <select id="tipoUsuario" name="tipoUsuario" required>
+                <option value="usuario">Usuário</option>
+                <option value="admin">Admin</option>
+            </select>
+            <label for="lojaUsuario">Loja:</label>
+            <input type="text" id="lojaUsuario" name="lojaUsuario" required />
+            <button type="submit">Cadastrar</button>
+        </form>
+    </section>
+    <section>
+        <h2>Relatórios</h2>
+        <button id="btnRelatorioItensContados">Itens Contados</button>
+        <button id="btnRelatorioItensNaoContados">Itens Não Contados</button>
+        <button id="btnRelatorioDivergencias">Itens com Divergências</button>
+        <div id="relatorioResultado"></div>
+    </section>
+    <script type="module" src="../js/admin.js"></script>
+</body>
+</html>

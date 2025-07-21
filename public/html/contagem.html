@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contagem - Conferência de Estoque</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+    <header>
+        <h1>Tela de Contagem</h1>
+        <button id="btnVoltarHub">Voltar ao Hub</button>
+    </header>
+    <section>
+        <label for="inputBusca">Buscar Produto (código de barras, código ou descrição):</label>
+        <input type="text" id="inputBusca" autocomplete="off" />
+        <button id="btnAtivarCamera">📷</button>
+        <ul id="resultadosBusca"></ul>
+    </section>
+    <section>
+        <form id="formContagem">
+            <div>
+                <label>Código Produto:</label>
+                <span id="codigoProduto"></span>
+            </div>
+            <div>
+                <label>Descrição:</label>
+                <span id="descricaoProduto"></span>
+            </div>
+            <div>
+                <label>Estoque Atual:</label>
+                <span id="estoqueAtual"></span>
+            </div>
+            <div>
+                <label>Departamento:</label>
+                <span id="departamento"></span>
+            </div>
+            <div>
+                <label>Categoria:</label>
+                <span id="categoria"></span>
+            </div>
+            <div>
+                <label>Subcategoria:</label>
+                <span id="subCategoria"></span>
+            </div>
+            <div>
+                <label>Disponibilidade:</label>
+                <span id="disponibilidade"></span>
+            </div>
+            <div>
+                <label for="localContagem">Local da Contagem:</label>
+                <input type="text" id="localContagem" name="localContagem" required />
+            </div>
+            <div>
+                <label for="quantidadeContada">Quantidade Contada:</label>
+                <input type="number" id="quantidadeContada" name="quantidadeContada" min="0" required />
+            </div>
+            <button type="submit">Registrar Contagem</button>
+        </form>
+    </section>
+    <script type="module" src="../js/contagem.js"></script>
+    <script type="module" src="../js/camera.js"></script>
+</body>
+</html>
