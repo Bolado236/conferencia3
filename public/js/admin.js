@@ -39,6 +39,25 @@ btnVoltarHub.addEventListener('click', () => {
     window.location.href = 'hub.html';
 });
 
+document.getElementById("btnCriarContagem").addEventListener("click", async () => {
+    const nome = document.getElementById("inputNomeContagem").value.trim();
+    const loja = sessionStorage.getItem("loja");
+    if (!nome || !loja) {
+        alert("Preencha nome da contagem e loja.");
+        return;
+    }
+    try {
+        const docRef = doc(db, "conferencias", loja, nome);
+        await setDoc(docRef, { criadaEm: new Date().toISOString() });
+        sessionStorage.setItem("contagemAtual", nome);
+        alert("Contagem criada com sucesso!");
+        carregarContagens();
+    } catch (error) {
+        console.error("Erro ao criar contagem:", error);
+        alert("Erro ao criar contagem.");
+    }
+});
+
 btnImportarBase.addEventListener('click', async () => {
     if (!inputXLSX.files.length) {
         alert('Selecione um arquivo XLSX para importar.');
@@ -49,11 +68,13 @@ btnImportarBase.addEventListener('click', async () => {
         baseProdutos = await converterXLSXParaJSON(file);
         alert('Base de produtos importada com sucesso. Total: ' + baseProdutos.length);
         // Salvar baseProdutos no Firestore na coleção correta
-        if (!lojaAtual || !contagemAtual) {
+        const loja = sessionStorage.getItem("loja");
+        const contagemAtual = sessionStorage.getItem("contagemAtual");
+        if (!loja || !contagemAtual) {
             alert('Loja ou contagem não definida. Por favor, selecione ou crie uma contagem.');
             return;
         }
-        const baseRef = doc(db, 'conferencias', lojaAtual, contagemAtual, 'baseProdutos');
+        const baseRef = doc(db, 'conferencias', loja, contagemAtual, 'baseProdutos');
         await setDoc(baseRef, { produtos: baseProdutos });
         alert('Base de produtos salva no Firestore.');
     } catch (error) {
@@ -93,7 +114,12 @@ async function carregarContagens() {
     controlesContagem.innerHTML = '';
     if (!lojaAtual) return;
     try {
-        const contagensRef = collection(db, 'conferencias', lojaAtual);
+        if (lojaAtual === 'todas') {
+            controlesContagem.textContent = 'Selecione uma loja específica para carregar contagens.';
+            return;
+        }
+        const lojaDocRef = doc(db, 'conferencias', lojaAtual);
+        const contagensRef = collection(lojaDocRef, 'contagens');
         const snapshot = await getDocs(contagensRef);
         if (snapshot.empty) {
             controlesContagem.textContent = 'Nenhuma contagem encontrada.';
