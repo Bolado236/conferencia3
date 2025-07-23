@@ -17,12 +17,7 @@
     <button id="btnNovaContagem">Nova Contagem</button>
     <div id="formNovaContagem" style="display:none;">
       <label for="selectLoja">Loja:</label>
-      <select id="selectLoja">
-        <option value="">-- Selecione --</option>
-        <option value="49">49 - Não-Me-Toque</option>
-        <option value="50">50 - Saldanha Marinho</option>
-        <option value="78">78 - Tapejara</option>
-      </select>
+      <select id="selectLoja"></select>
 
       <label for="inputNomeContagem">Nome da Contagem:</label>
       <input type="text" id="inputNomeContagem" placeholder="Ex: contagem1" />
@@ -42,20 +37,10 @@
   </section>
 
   <section>
-    <h2>Gerenciar Conferências</h2>
-    <label for="selectContagemExistente">Contagem Existente:</label>
-    <select id="selectContagemExistente">
-      <option value="">-- Selecione a contagem --</option>
-    </select>
-
-    <label for="selectModeloEtapa">Modelo da Etapa:</label>
-    <select id="selectModeloEtapa">
-      <option value="cega">Cega</option>
-      <option value="por-subcategoria">Por Subcategoria</option>
-    </select>
-
-    <button id="btnNovaEtapaConferencia" style="display:none;">Gerar Nova Etapa</button>
-    <div id="listaContagensExistentes"></div>
+    <h2>Gerar Nova Etapa</h2>
+    <select id="selectContagemExistente"></select>
+    <button id="btnGerarEtapa">Gerar Nova Etapa</button>
+    <div id="msgEtapa"></div>
   </section>
 
   <section>
@@ -63,17 +48,19 @@
     <form id="formCadastroUsuario">
       <label for="novoUsuario">Usuário:</label>
       <input type="text" id="novoUsuario" name="novoUsuario" required />
+
       <label for="novaSenha">Senha:</label>
       <input type="password" id="novaSenha" name="novaSenha" required />
+
       <label for="tipoUsuario">Tipo:</label>
       <select id="tipoUsuario" name="tipoUsuario" required>
         <option value="usuario">Usuário</option>
         <option value="admin">Admin</option>
       </select>
+
       <label for="lojaUsuario">Loja:</label>
-      <select id="lojaUsuario" name="lojaUsuario" required>
-        <option value="">-- Selecione a loja --</option>
-      </select>
+      <select id="selectLojaUsuario"></select>
+
       <button type="submit">Cadastrar</button>
     </form>
   </section>
