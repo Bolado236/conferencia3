@@ -1,52 +1,91 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Admin - Conferência de Estoque</title>
-    <link rel="stylesheet" href="../css/styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin - Conferência de Estoque</title>
+  <link rel="stylesheet" href="../css/styles.css" />
 </head>
 <body>
-    <header>
-        <h1>Painel Admin</h1>
-        <button id="btnVoltarHub">Voltar ao Hub</button>
-    </header>
-    <section>
-        <h2>Importar Base de Produtos (.xlsx)</h2>
-        <input type="file" id="inputXLSX" accept=".xlsx" />
-        <button id="btnImportarBase">Importar</button>
-    </section>
-    <section>
-        <h2>Gerenciar Contagens</h2>
-        <div id="controlesContagem"></div>
-        <h2>Criar Contagem</h2>
-        <input type="text" id="inputNomeContagem" placeholder="Nome da contagem (ex: contagem1)" />
-        <button id="btnCriarContagem">Criar Contagem</button>
-    </section>
-    <section>
-        <h2>Cadastro de Usuários</h2>
-        <form id="formCadastroUsuario">
-            <label for="novoUsuario">Usuário:</label>
-            <input type="text" id="novoUsuario" name="novoUsuario" required />
-            <label for="novaSenha">Senha:</label>
-            <input type="password" id="novaSenha" name="novaSenha" required />
-            <label for="tipoUsuario">Tipo:</label>
-            <select id="tipoUsuario" name="tipoUsuario" required>
-                <option value="usuario">Usuário</option>
-                <option value="admin">Admin</option>
-            </select>
-            <label for="lojaUsuario">Loja:</label>
-            <input type="text" id="lojaUsuario" name="lojaUsuario" required />
-            <button type="submit">Cadastrar</button>
-        </form>
-    </section>
-    <section>
-        <h2>Relatórios</h2>
-        <button id="btnRelatorioItensContados">Itens Contados</button>
-        <button id="btnRelatorioItensNaoContados">Itens Não Contados</button>
-        <button id="btnRelatorioDivergencias">Itens com Divergências</button>
-        <div id="relatorioResultado"></div>
-    </section>
-    <script type="module" src="../js/admin.js"></script>
+  <header>
+    <h1>Painel Admin</h1>
+    <button id="btnVoltarHub">Voltar ao Hub</button>
+  </header>
+
+  <section>
+    <h2>Criar Nova Contagem</h2>
+    <button id="btnNovaContagem">Nova Contagem</button>
+    <div id="formNovaContagem" style="display:none;">
+      <label for="selectLoja">Loja:</label>
+      <select id="selectLoja">
+        <option value="">-- Selecione --</option>
+        <option value="49">49 - Não-Me-Toque</option>
+        <option value="50">50 - Saldanha Marinho</option>
+        <option value="78">78 - Tapejara</option>
+      </select>
+
+      <label for="inputNomeContagem">Nome da Contagem:</label>
+      <input type="text" id="inputNomeContagem" placeholder="Ex: contagem1" />
+
+      <label for="inputXLSX">Importar Base (.xlsx):</label>
+      <input type="file" id="inputXLSX" accept=".xlsx" />
+
+      <label for="selectModelo">Modelo:</label>
+      <select id="selectModelo">
+        <option value="">-- Escolha o modelo --</option>
+        <option value="cega">Cega</option>
+        <option value="por-subcategoria">Por Subcategoria</option>
+      </select>
+
+      <button id="btnCriarContagemCompleta">Confirmar e Criar</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Gerenciar Conferências</h2>
+    <label for="selectContagemExistente">Contagem Existente:</label>
+    <select id="selectContagemExistente">
+      <option value="">-- Selecione a contagem --</option>
+    </select>
+
+    <label for="selectModeloEtapa">Modelo da Etapa:</label>
+    <select id="selectModeloEtapa">
+      <option value="cega">Cega</option>
+      <option value="por-subcategoria">Por Subcategoria</option>
+    </select>
+
+    <button id="btnNovaEtapaConferencia" style="display:none;">Gerar Nova Etapa</button>
+    <div id="listaContagensExistentes"></div>
+  </section>
+
+  <section>
+    <h2>Cadastro de Usuários</h2>
+    <form id="formCadastroUsuario">
+      <label for="novoUsuario">Usuário:</label>
+      <input type="text" id="novoUsuario" name="novoUsuario" required />
+      <label for="novaSenha">Senha:</label>
+      <input type="password" id="novaSenha" name="novaSenha" required />
+      <label for="tipoUsuario">Tipo:</label>
+      <select id="tipoUsuario" name="tipoUsuario" required>
+        <option value="usuario">Usuário</option>
+        <option value="admin">Admin</option>
+      </select>
+      <label for="lojaUsuario">Loja:</label>
+      <select id="lojaUsuario" name="lojaUsuario" required>
+        <option value="">-- Selecione a loja --</option>
+      </select>
+      <button type="submit">Cadastrar</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Relatórios</h2>
+    <button id="btnRelatorioItensContados">Itens Contados</button>
+    <button id="btnRelatorioItensNaoContados">Itens Não Contados</button>
+    <button id="btnRelatorioDivergencias">Itens com Divergências</button>
+    <div id="relatorioResultado"></div>
+  </section>
+
+  <script type="module" src="../js/admin.js"></script>
 </body>
 </html>

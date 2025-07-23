@@ -1,5 +1,5 @@
 import { db } from './firebase.js';
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
 const infoUsuarioLoja = document.getElementById('infoUsuarioLoja');
 const listaContagens = document.getElementById('listaContagens');
@@ -19,20 +19,50 @@ function verificarSessao() {
     return { usuario, tipo, loja };
 }
 
+async function carregarEtapaAtual(loja, contagemId) {
+    try {
+        const contagemRef = doc(db, 'conferencias', loja, 'contagens', contagemId);
+        const snap = await getDoc(contagemRef);
+        if (snap.exists()) {
+            const etapaAtual = snap.data().etapaAtual;
+            return etapaAtual;
+        }
+        return null;
+    } catch (error) {
+        console.error('Erro ao carregar etapa atual:', error);
+        return null;
+    }
+}
+
 async function carregarContagens(loja) {
     listaContagens.innerHTML = '';
     try {
-        const contagensRef = collection(db, 'conferencias', loja);
+        const contagensRef = collection(db, 'conferencias', loja, 'contagens');
         const snapshot = await getDocs(contagensRef);
         if (snapshot.empty) {
             listaContagens.innerHTML = '<li>Nenhuma contagem ativa.</li>';
             return;
         }
-        snapshot.forEach(doc => {
+        for (const docSnap of snapshot.docs) {
+            const contagemId = docSnap.id;
+            const etapaAtual = await carregarEtapaAtual(loja, contagemId);
             const li = document.createElement('li');
-            li.textContent = doc.id;
+            li.textContent = contagemId + ' - Etapa Atual: ' + (etapaAtual || 'N/A');
+
+            // Mostrar botão iniciar contagem apenas se for etapa atual
+            if (etapaAtual) {
+                const btnIniciar = document.createElement('button');
+                btnIniciar.textContent = 'Iniciar Contagem';
+                btnIniciar.addEventListener('click', () => {
+                    sessionStorage.setItem('contagemAtual', contagemId);
+                    sessionStorage.setItem('etapaAtual', etapaAtual);
+                    window.location.href = '../html/contagem.html';
+                });
+                li.appendChild(btnIniciar);
+            }
+
             listaContagens.appendChild(li);
-        });
+        }
     } catch (error) {
         console.error('Erro ao carregar contagens:', error);
         listaContagens.innerHTML = '<li>Erro ao carregar contagens.</li>';

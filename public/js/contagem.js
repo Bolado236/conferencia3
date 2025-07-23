@@ -19,6 +19,7 @@ let produtoSelecionado = null;
 let lojaAtual = null;
 let contagemAtual = null;
 let usuarioAtual = null;
+let etapaAtiva = null;
 
 function verificarSessao() {
     const usuario = sessionStorage.getItem('usuario');
@@ -33,10 +34,25 @@ function verificarSessao() {
     return { usuario, tipo, loja };
 }
 
+async function carregarEtapaAtiva() {
+    if (!lojaAtual || !contagemAtual) return null;
+    try {
+        const etapaDocRef = doc(db, 'conferencias', lojaAtual, 'contagens', contagemAtual, 'etapaAtual');
+        const etapaDocSnap = await getDoc(etapaDocRef);
+        if (etapaDocSnap.exists()) {
+            return etapaDocSnap.data().etapaAtual;
+        }
+        return null;
+    } catch (error) {
+        console.error('Erro ao carregar etapa ativa:', error);
+        return null;
+    }
+}
+
 async function carregarBaseProdutos() {
     if (!lojaAtual || !contagemAtual) return;
     try {
-        const baseRef = doc(db, 'conferencias', lojaAtual, contagemAtual, 'baseProdutos');
+        const baseRef = doc(db, 'conferencias', lojaAtual, 'contagens', contagemAtual, 'baseProdutos');
         const baseSnap = await getDoc(baseRef);
         if (baseSnap.exists()) {
             baseProdutos = baseSnap.data().produtos || [];
@@ -66,11 +82,17 @@ function exibirProduto(produto) {
     produtoSelecionado = produto;
     codigoProdutoSpan.textContent = produto.codigoProduto || '';
     descricaoProdutoSpan.textContent = produto.descricao || '';
-    estoqueAtualSpan.textContent = produto.quantidade || '';
     departamentoSpan.textContent = produto.departamento || '';
     categoriaSpan.textContent = produto.categoria || '';
     subCategoriaSpan.textContent = produto.subcategoria || '';
     disponibilidadeSpan.textContent = produto.disponibilidade || '';
+
+    // Se for contagem às cegas, não mostrar estoque
+    if (etapaAtiva === 'contagemAsCegas') {
+        estoqueAtualSpan.textContent = '---';
+    } else {
+        estoqueAtualSpan.textContent = produto.quantidade || '';
+    }
 }
 
 function buscarProdutos(termo) {
@@ -128,8 +150,14 @@ async function registrarContagem(event) {
         return;
     }
 
+    // Bloquear registro se etapa atual não for a etapa ativa
+    if (etapaAtiva !== sessionStorage.getItem('etapaAtual')) {
+        alert('Você só pode registrar contagens na etapa ativa.');
+        return;
+    }
+
     try {
-        const contagemRef = doc(db, 'conferencias', lojaAtual, contagemAtual, 'contagem1');
+        const contagemRef = doc(db, 'conferencias', lojaAtual, 'contagens', contagemAtual, etapaAtiva);
         const produtoDocRef = doc(contagemRef, produtoSelecionado.codigoProduto);
         const leitura = {
             quantidade: quantidadeContada,
@@ -165,7 +193,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!sessao) return;
     lojaAtual = sessao.loja;
     usuarioAtual = sessao.usuario;
-    contagemAtual = 'contagem1'; // Pode ser parametrizado conforme o modelo
+    contagemAtual = sessionStorage.getItem('contagemAtual');
+    etapaAtiva = sessionStorage.getItem('etapaAtual');
+
+    if (!contagemAtual || !etapaAtiva) {
+        alert('Contagem ou etapa não definida. Retornando ao hub.');
+        window.location.href = 'hub.html';
+        return;
+    }
+
+    etapaAtiva = await carregarEtapaAtiva();
 
     await carregarBaseProdutos();
 

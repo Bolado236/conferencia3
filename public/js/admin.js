@@ -1,187 +1,433 @@
 import { db } from './firebase.js';
-import { collection, doc, setDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import { doc, setDoc, getDocs, collection } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
 import { converterXLSXParaJSON } from './xlsxConverter.js';
+import { lojas } from './lojas.js';
 
-const inputXLSX = document.getElementById('inputXLSX');
-const btnImportarBase = document.getElementById('btnImportarBase');
-const formCadastroUsuario = document.getElementById('formCadastroUsuario');
-const btnVoltarHub = document.getElementById('btnVoltarHub');
-const relatorioResultado = document.getElementById('relatorioResultado');
-const btnRelatorioItensContados = document.getElementById('btnRelatorioItensContados');
-const btnRelatorioItensNaoContados = document.getElementById('btnRelatorioItensNaoContados');
-const btnRelatorioDivergencias = document.getElementById('btnRelatorioDivergencias');
-const controlesContagem = document.getElementById('controlesContagem');
+document.getElementById("btnVoltarHub").addEventListener("click", () => {
+  window.location.href = 'hub.html';
+});
 
-let baseProdutos = [];
-let lojaAtual = null;
-let contagemAtual = null;
+document.getElementById("btnNovaContagem").addEventListener("click", () => {
+  document.getElementById("formNovaContagem").style.display = "block";
+});
 
-function verificarSessao() {
-    const usuario = sessionStorage.getItem('usuario');
-    const tipo = sessionStorage.getItem('tipo');
-    const loja = sessionStorage.getItem('loja');
+document.getElementById("btnCriarContagemCompleta").addEventListener("click", async () => {
+  const loja = document.getElementById("selectLoja").value;
+  let nome = document.getElementById("inputNomeContagem").value.trim().replace(/\s+/g, "_");
+  const modelo = document.getElementById("selectModelo").value;
+  const file = document.getElementById("inputXLSX").files[0];
 
-    if (!usuario || !tipo || !loja) {
-        window.location.href = 'login.html';
-        return null;
+  if (!loja || !nome || !modelo || !file) {
+    alert("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  try {
+    const baseProdutos = await converterXLSXParaJSON(file);
+
+    const contagemDoc = doc(db, `conferencias/${loja}/contagens/${nome}`);
+    await setDoc(contagemDoc, {
+      criadaEm: new Date().toISOString(),
+      modelo: modelo
+    });
+
+    for (const item of baseProdutos) {
+      const id = item.codigoProduto?.toString() || crypto.randomUUID();
+      const codigos = typeof item.codigobarras === 'string'
+        ? item.codigobarras.split(';').map(c => c.trim())
+        : [];
+      const produtoRef = doc(db, `conferencias/${loja}/contagens/${nome}/baseProdutos/${id}`);
+      await setDoc(produtoRef, {
+        ...item,
+        codigobarras: codigos
+      });
     }
 
-    if (tipo !== 'admin') {
-        alert('Acesso negado. Apenas administradores podem acessar esta página.');
-        window.location.href = 'hub.html';
-        return null;
-    }
+    sessionStorage.setItem("loja", loja);
+    sessionStorage.setItem("contagemAtual", nome);
+    const form = document.getElementById("formNovaContagem");
+    form.style.display = "none";
+    form.reset?.(); // se for um form real, senão limpe manualmente
 
-    return { usuario, tipo, loja };
+    document.getElementById("selectLoja").value = "";
+    document.getElementById("inputNomeContagem").value = "";
+    document.getElementById("inputXLSX").value = "";
+    document.getElementById("selectModelo").value = "";
+
+    const msg = document.createElement("p");
+    msg.textContent = "✅ Contagem criada com sucesso!";
+    msg.style.color = "green";
+    msg.style.marginTop = "10px";
+    form.insertAdjacentElement("beforebegin", msg);
+
+    setTimeout(() => msg.remove(), 5000);
+
+    carregarContagens(loja);
+  } catch (err) {
+    console.error("Erro ao criar contagem:", err);
+    alert("Erro ao criar contagem: " + err.message);
+  }
+});
+
+document.getElementById("btnNovaEtapaConferencia").addEventListener("click", async () => {
+  const loja = sessionStorage.getItem("loja");
+  const atual = sessionStorage.getItem("contagemAtual");
+  if (!loja || !atual) {
+    alert("Nenhuma contagem ativa.");
+    return;
+  }
+
+  const novaId = prompt("Digite o nome da nova etapa da contagem (ex: contagem2):").trim().replace(/\s+/g, "_");
+  if (!novaId) return;
+
+  try {
+    const novaRef = doc(db, `conferencias/${loja}/contagens/${novaId}`);
+    await setDoc(novaRef, {
+      geradaDe: atual,
+      criadaEm: new Date().toISOString()
+    });
+    sessionStorage.setItem("contagemAtual", novaId);
+    alert("Nova etapa criada.");
+    carregarContagens(loja);
+  } catch (err) {
+    console.error("Erro ao gerar nova conferência:", err);
+    alert("Erro: " + err.message);
+  }
+});
+
+async function carregarContagens(loja) {
+  const lista = document.getElementById("listaContagensExistentes");
+  lista.innerHTML = "<p>Carregando...</p>";
+  try {
+    const snap = await getDocs(collection(db, `conferencias/${loja}/contagens`));
+    if (snap.empty) {
+      lista.innerHTML = "<p>Nenhuma contagem encontrada.</p>";
+      return;
+    }
+    let html = "<ul>";
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      html += `<li><b>${docSnap.id}</b> - modelo: ${data.modelo || 'n/d'}</li>`;
+    });
+    html += "</ul>";
+    lista.innerHTML = html;
+  } catch (err) {
+    lista.innerHTML = "<p>Erro ao carregar contagens.</p>";
+    console.error(err);
+  }
 }
 
-btnVoltarHub.addEventListener('click', () => {
-    window.location.href = 'hub.html';
+import { db } from './firebase.js';
+import { doc, setDoc, getDocs, collection, updateDoc } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+import { converterXLSXParaJSON } from './xlsxConverter.js';
+import { lojas } from './lojas.js';
+
+document.getElementById("btnVoltarHub").addEventListener("click", () => {
+  window.location.href = 'hub.html';
 });
 
-document.getElementById("btnCriarContagem").addEventListener("click", async () => {
-    const nome = document.getElementById("inputNomeContagem").value.trim();
-    const loja = sessionStorage.getItem("loja");
-    if (!nome || !loja) {
-        alert("Preencha nome da contagem e loja.");
-        return;
-    }
-    try {
-        const docRef = doc(db, "conferencias", loja, nome);
-        await setDoc(docRef, { criadaEm: new Date().toISOString() });
-        sessionStorage.setItem("contagemAtual", nome);
-        alert("Contagem criada com sucesso!");
-        carregarContagens();
-    } catch (error) {
-        console.error("Erro ao criar contagem:", error);
-        alert("Erro ao criar contagem.");
-    }
+document.getElementById("btnNovaContagem").addEventListener("click", () => {
+  document.getElementById("formNovaContagem").style.display = "block";
 });
 
-btnImportarBase.addEventListener('click', async () => {
-    if (!inputXLSX.files.length) {
-        alert('Selecione um arquivo XLSX para importar.');
-        return;
+document.getElementById("btnCriarContagemCompleta").addEventListener("click", async () => {
+  const loja = document.getElementById("selectLoja").value;
+  let nome = document.getElementById("inputNomeContagem").value.trim().replace(/\s+/g, "_");
+  const modelo = document.getElementById("selectModelo").value;
+  const file = document.getElementById("inputXLSX").files[0];
+
+  if (!loja || !nome || !modelo || !file) {
+    alert("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  try {
+    const baseProdutos = await converterXLSXParaJSON(file);
+
+    const contagemDoc = doc(db, `conferencias/${loja}/contagens/${nome}`);
+    await setDoc(contagemDoc, {
+      criadaEm: new Date().toISOString(),
+      modelo: modelo
+    });
+
+    for (const item of baseProdutos) {
+      const id = item.codigoProduto?.toString() || crypto.randomUUID();
+      const codigos = typeof item.codigobarras === 'string'
+        ? item.codigobarras.split(';').map(c => c.trim())
+        : [];
+      const produtoRef = doc(db, `conferencias/${loja}/contagens/${nome}/baseProdutos/${id}`);
+      await setDoc(produtoRef, {
+        ...item,
+        codigobarras: codigos
+      });
     }
-    const file = inputXLSX.files[0];
-    try {
-        baseProdutos = await converterXLSXParaJSON(file);
-        alert('Base de produtos importada com sucesso. Total: ' + baseProdutos.length);
-        // Salvar baseProdutos no Firestore na coleção correta
-        const loja = sessionStorage.getItem("loja");
-        const contagemAtual = sessionStorage.getItem("contagemAtual");
-        if (!loja || !contagemAtual) {
-            alert('Loja ou contagem não definida. Por favor, selecione ou crie uma contagem.');
-            return;
-        }
-        const baseRef = doc(db, 'conferencias', loja, contagemAtual, 'baseProdutos');
-        await setDoc(baseRef, { produtos: baseProdutos });
-        alert('Base de produtos salva no Firestore.');
-    } catch (error) {
-        console.error('Erro ao importar base:', error);
-        alert('Erro ao importar base: ' + error.message);
-    }
+
+    sessionStorage.setItem("loja", loja);
+    sessionStorage.setItem("contagemAtual", nome);
+    const form = document.getElementById("formNovaContagem");
+    form.style.display = "none";
+    form.reset?.(); // se for um form real, senão limpe manualmente
+
+    document.getElementById("selectLoja").value = "";
+    document.getElementById("inputNomeContagem").value = "";
+    document.getElementById("inputXLSX").value = "";
+    document.getElementById("selectModelo").value = "";
+
+    const msg = document.createElement("p");
+    msg.textContent = "✅ Contagem criada com sucesso!";
+    msg.style.color = "green";
+    msg.style.marginTop = "10px";
+    form.insertAdjacentElement("beforebegin", msg);
+
+    setTimeout(() => msg.remove(), 5000);
+
+    carregarContagens(loja);
+  } catch (err) {
+    console.error("Erro ao criar contagem:", err);
+    alert("Erro ao criar contagem: " + err.message);
+  }
 });
 
-formCadastroUsuario.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const novoUsuario = formCadastroUsuario.novoUsuario.value.trim();
-    const novaSenha = formCadastroUsuario.novaSenha.value.trim();
-    const tipoUsuario = formCadastroUsuario.tipoUsuario.value;
-    const lojaUsuario = formCadastroUsuario.lojaUsuario.value.trim();
+document.getElementById("btnNovaEtapaConferencia").addEventListener("click", async () => {
+  const loja = sessionStorage.getItem("loja");
+  const contagemId = document.getElementById("selectContagemAtual").value;
+  const modeloEtapa = document.getElementById("selectModeloEtapa").value;
 
-    if (!novoUsuario || !novaSenha || !tipoUsuario || !lojaUsuario) {
-        alert('Preencha todos os campos do cadastro.');
-        return;
-    }
+  if (!loja || !contagemId) {
+    alert("Selecione uma contagem para gerar nova etapa.");
+    return;
+  }
 
-    try {
-        const userRef = doc(db, 'usuarios', novoUsuario);
-        await setDoc(userRef, {
-            senha: novaSenha,
-            tipo: tipoUsuario,
-            loja: lojaUsuario
-        });
-        alert('Usuário cadastrado com sucesso.');
-        formCadastroUsuario.reset();
-    } catch (error) {
-        console.error('Erro ao cadastrar usuário:', error);
-        alert('Erro ao cadastrar usuário.');
-    }
+  if (!modeloEtapa) {
+    alert("Selecione um modelo para a nova etapa.");
+    return;
+  }
+
+  const novaEtapa = prompt("Digite o nome da nova etapa da contagem (ex: contagem2):");
+  if (!novaEtapa) return;
+
+  try {
+    const novaEtapaId = novaEtapa.trim().replace(/\s+/g, "_");
+    const novaEtapaRef = doc(db, `conferencias/${loja}/contagens/${contagemId}/${novaEtapaId}`);
+    await setDoc(novaEtapaRef, {
+      modelo: modeloEtapa,
+      criadaEm: new Date().toISOString()
+    });
+
+    // Atualizar etapaAtual no documento da contagem
+    const contagemDocRef = doc(db, `conferencias/${loja}/contagens/${contagemId}`);
+    await updateDoc(contagemDocRef, {
+      etapaAtual: novaEtapaId
+    });
+
+    alert(`Nova etapa '${novaEtapaId}' criada e ativada.`);
+    carregarContagens(loja);
+    carregarDropdownContagens(loja);
+  } catch (err) {
+    console.error("Erro ao criar nova etapa:", err);
+    alert("Erro ao criar nova etapa: " + err.message);
+  }
 });
 
-async function carregarContagens() {
-    controlesContagem.innerHTML = '';
-    if (!lojaAtual) return;
-    try {
-        if (lojaAtual === 'todas') {
-            controlesContagem.textContent = 'Selecione uma loja específica para carregar contagens.';
-            return;
-        }
-        const lojaDocRef = doc(db, 'conferencias', lojaAtual);
-        const contagensRef = collection(lojaDocRef, 'contagens');
-        const snapshot = await getDocs(contagensRef);
-        if (snapshot.empty) {
-            controlesContagem.textContent = 'Nenhuma contagem encontrada.';
-            return;
-        }
-        snapshot.forEach(docSnap => {
-            const div = document.createElement('div');
-            div.textContent = docSnap.id;
-            div.style.cursor = 'pointer';
-            div.addEventListener('click', () => {
-                contagemAtual = docSnap.id;
-                alert('Contagem selecionada: ' + contagemAtual);
-            });
-            controlesContagem.appendChild(div);
-        });
-    } catch (error) {
-        console.error('Erro ao carregar contagens:', error);
-        controlesContagem.textContent = 'Erro ao carregar contagens.';
+async function carregarContagens(loja) {
+  const lista = document.getElementById("listaContagensExistentes");
+  lista.innerHTML = "<p>Carregando...</p>";
+  try {
+    const snap = await getDocs(collection(db, `conferencias/${loja}/contagens`));
+    if (snap.empty) {
+      lista.innerHTML = "<p>Nenhuma contagem encontrada.</p>";
+      return;
     }
+    let html = "<ul>";
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      html += `<li><b>${docSnap.id}</b> - modelo: ${data.modelo || 'n/d'}</li>`;
+    });
+    html += "</ul>";
+    lista.innerHTML = html;
+  } catch (err) {
+    lista.innerHTML = "<p>Erro ao carregar contagens.</p>";
+    console.error(err);
+  }
 }
 
-btnRelatorioItensContados.addEventListener('click', () => {
-    gerarRelatorio('itensContados');
-});
+async function carregarDropdownContagens(loja) {
+  const selectContagemAtual = document.getElementById("selectContagemAtual");
+  if (!selectContagemAtual) return;
 
-btnRelatorioItensNaoContados.addEventListener('click', () => {
-    gerarRelatorio('itensNaoContados');
-});
+  selectContagemAtual.innerHTML = '<option value="">-- Selecione a contagem --</option>';
 
-btnRelatorioDivergencias.addEventListener('click', () => {
-    gerarRelatorio('itensDivergencias');
-});
-
-async function gerarRelatorio(tipoRelatorio) {
-    if (!lojaAtual || !contagemAtual) {
-        alert('Selecione uma contagem para gerar o relatório.');
-        return;
-    }
-    relatorioResultado.textContent = 'Carregando relatório...';
-    try {
-        const contagemRef = doc(db, 'conferencias', lojaAtual, contagemAtual);
-        const contagemSnap = await getDocs(collection(contagemRef, tipoRelatorio));
-        if (contagemSnap.empty) {
-            relatorioResultado.textContent = 'Nenhum dado encontrado para este relatório.';
-            return;
-        }
-        let html = '<ul>';
-        contagemSnap.forEach(docSnap => {
-            const item = docSnap.data();
-            html += `<li>${item.codigoProduto} - ${item.descricao} - Quantidade: ${item.quantidade || ''}</li>`;
-        });
-        html += '</ul>';
-        relatorioResultado.innerHTML = html;
-    } catch (error) {
-        console.error('Erro ao gerar relatório:', error);
-        relatorioResultado.textContent = 'Erro ao gerar relatório.';
-    }
+  try {
+    const snap = await getDocs(collection(db, `conferencias/${loja}/contagens`));
+    snap.forEach(docSnap => {
+      const option = document.createElement("option");
+      option.value = docSnap.id;
+      option.textContent = docSnap.id;
+      selectContagemAtual.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Erro ao carregar dropdown de contagens:", err);
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const sessao = verificarSessao();
-    if (!sessao) return;
-    lojaAtual = sessao.loja;
-    carregarContagens();
+import { db } from './firebase.js';
+import { doc, setDoc, getDocs, collection, updateDoc } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+import { converterXLSXParaJSON } from './xlsxConverter.js';
+import { lojas } from './lojas.js';
+
+document.getElementById("btnVoltarHub").addEventListener("click", () => {
+  window.location.href = 'hub.html';
+});
+
+document.getElementById("btnNovaContagem").addEventListener("click", () => {
+  document.getElementById("formNovaContagem").style.display = "block";
+});
+
+document.getElementById("btnCriarContagemCompleta").addEventListener("click", async () => {
+  const loja = document.getElementById("selectLoja").value;
+  let nome = document.getElementById("inputNomeContagem").value.trim().replace(/\s+/g, "_");
+  const modelo = document.getElementById("selectModelo").value;
+  const file = document.getElementById("inputXLSX").files[0];
+
+  if (!loja || !nome || !modelo || !file) {
+    alert("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  try {
+    const baseProdutos = await converterXLSXParaJSON(file);
+
+    const contagemDoc = doc(db, `conferencias/${loja}/contagens/${nome}`);
+    await setDoc(contagemDoc, {
+      criadaEm: new Date().toISOString(),
+      modelo: modelo
+    });
+
+    for (const item of baseProdutos) {
+      const id = item.codigoProduto?.toString() || crypto.randomUUID();
+      const codigos = typeof item.codigobarras === 'string'
+        ? item.codigobarras.split(';').map(c => c.trim())
+        : [];
+      const produtoRef = doc(db, `conferencias/${loja}/contagens/${nome}/baseProdutos/${id}`);
+      await setDoc(produtoRef, {
+        ...item,
+        codigobarras: codigos
+      });
+    }
+
+    sessionStorage.setItem("loja", loja);
+    sessionStorage.setItem("contagemAtual", nome);
+    const form = document.getElementById("formNovaContagem");
+    form.style.display = "none";
+    form.reset?.(); // se for um form real, senão limpe manualmente
+
+    document.getElementById("selectLoja").value = "";
+    document.getElementById("inputNomeContagem").value = "";
+    document.getElementById("inputXLSX").value = "";
+    document.getElementById("selectModelo").value = "";
+
+    const msg = document.createElement("p");
+    msg.textContent = "✅ Contagem criada com sucesso!";
+    msg.style.color = "green";
+    msg.style.marginTop = "10px";
+    form.insertAdjacentElement("beforebegin", msg);
+
+    setTimeout(() => msg.remove(), 5000);
+
+    carregarContagens(loja);
+  } catch (err) {
+    console.error("Erro ao criar contagem:", err);
+    alert("Erro ao criar contagem: " + err.message);
+  }
+});
+
+const btnNovaEtapaConferencia = document.getElementById("btnNovaEtapaConferencia");
+const selectContagemExistente = document.getElementById("selectContagemExistente");
+const selectModeloEtapa = document.getElementById("selectModeloEtapa");
+
+btnNovaEtapaConferencia.style.display = "none";
+
+selectContagemExistente.addEventListener("change", () => {
+  if (selectContagemExistente.value) {
+    btnNovaEtapaConferencia.style.display = "inline-block";
+  } else {
+    btnNovaEtapaConferencia.style.display = "none";
+  }
+});
+
+btnNovaEtapaConferencia.addEventListener("click", async () => {
+  const loja = sessionStorage.getItem("loja");
+  const contagemSelecionada = selectContagemExistente.value;
+  const modeloEtapa = selectModeloEtapa.value;
+
+  if (!loja || !contagemSelecionada) {
+    alert("Selecione uma contagem para gerar nova etapa.");
+    return;
+  }
+
+  if (!modeloEtapa) {
+    alert("Selecione um modelo para a nova etapa.");
+    return;
+  }
+
+  try {
+    // Buscar as etapas existentes para gerar o próximo nome sequencial
+    const etapasSnap = await getDocs(collection(db, `conferencias/${loja}/contagens/${contagemSelecionada}`));
+    const etapasExistentes = etapasSnap.docs.map(doc => doc.id).filter(id => id.startsWith("contagem"));
+    let maxNumero = 0;
+    etapasExistentes.forEach(id => {
+      const num = parseInt(id.replace("contagem", ""), 10);
+      if (!isNaN(num) && num > maxNumero) {
+        maxNumero = num;
+      }
+    });
+    const novaEtapaNumero = maxNumero + 1;
+    const novaEtapaId = `contagem${novaEtapaNumero}`;
+
+    // Criar nova etapa com modelo e data
+    const novaEtapaRef = doc(db, `conferencias/${loja}/contagens/${contagemSelecionada}/${novaEtapaId}`);
+    await setDoc(novaEtapaRef, {
+      modelo: modeloEtapa,
+      criadaEm: new Date().toISOString()
+    });
+
+    // Atualizar etapaAtual no documento da contagem principal
+    const contagemDocRef = doc(db, `conferencias/${loja}/contagens/${contagemSelecionada}`);
+    await updateDoc(contagemDocRef, {
+      etapaAtual: novaEtapaId
+    });
+
+    alert(`Nova etapa '${novaEtapaId}' criada e ativada.`);
+    carregarContagens(loja);
+    carregarDropdownContagens(loja);
+  } catch (err) {
+    console.error("Erro ao criar nova etapa:", err);
+    alert("Erro ao criar nova etapa: " + err.message);
+  }
+});
+
+async function carregarDropdownContagens(loja) {
+  if (!selectContagemExistente) return;
+
+  selectContagemExistente.innerHTML = '<option value="">-- Selecione a contagem --</option>';
+
+  try {
+    const snap = await getDocs(collection(db, `conferencias/${loja}/contagens`));
+    snap.forEach(docSnap => {
+      const option = document.createElement("option");
+      option.value = docSnap.id;
+      option.textContent = docSnap.id;
+      selectContagemExistente.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Erro ao carregar dropdown de contagens:", err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const loja = sessionStorage.getItem("loja");
+  if (loja) {
+    carregarContagens(loja);
+    carregarDropdownContagens(loja);
+  }
 });
