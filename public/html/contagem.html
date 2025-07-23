@@ -2,63 +2,56 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Contagem - Conferência de Estoque</title>
-    <link rel="stylesheet" href="../css/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Contagem de Estoque</title>
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
     <header>
-        <h1>Tela de Contagem</h1>
+        <h1>Contagem de Estoque</h1>
         <button id="btnVoltarHub">Voltar ao Hub</button>
     </header>
-    <section>
-        <label for="inputBusca">Buscar Produto (código de barras, código ou descrição):</label>
-        <input type="text" id="inputBusca" autocomplete="off" />
-        <button id="btnAtivarCamera">📷</button>
-        <ul id="resultadosBusca"></ul>
-    </section>
-    <section>
-        <form id="formContagem">
-            <div>
-                <label>Código Produto:</label>
-                <span id="codigoProduto"></span>
+
+    <main>
+        <section id="infoEtapaAtual">
+            <h2>Etapa Atual: <span id="tipoEtapaTexto">Carregando...</span></h2>
+
+            <label for="selectLocal">Local da Contagem:</label>
+            <select id="selectLocal">
+                <option value="Loja">Loja</option>
+                <option value="Deposito Pequeno">Depósito Pequeno</option>
+                <option value="Deposito Grande">Depósito Grande</option>
+                <option value="Ar Livre">Ar Livre</option>
+            </select>
+
+            <button id="btnMinhasContagens">Minhas Contagens</button>
+            <div id="minhasContagensResultado" style="margin-top: 1em;"></div>
+        </section>
+
+        <section id="formularioContagem">
+            <h2>Inserir Item</h2>
+            <section id="buscaProduto">
+                <input type="text" id="inputBusca" placeholder="Digite ou escaneie o produto" />
+                <button id="btnCamera" style="margin-left: 4px;">📷</button>
+            </section>
+            <button id="btnBuscarItem">Buscar</button>
+            
+            <div id="dadosItem" style="display:none;">
+                <p><strong>Código Produto:</strong> <span id="infoCodigo"></span></p>
+                <p><strong>Descrição:</strong> <span id="infoDescricao"></span></p>
+                <!--<p><strong>Estoque Atual:</strong> <span id="infoEstoque"></span></p>-->
+                <p><strong>Departamento:</strong> <span id="infoDepartamento"></span></p>
+                <p><strong>Categoria:</strong> <span id="infoCategoria"></span></p>
+                <p><strong>Subcategoria:</strong> <span id="infoSubcategoria"></span></p>
+                <label for="inputQuantidade">Quantidade:</label>
+                <input type="number" id="inputQuantidade" />
+                <button id="btnSalvarContagem">Salvar Contagem</button>
             </div>
-            <div>
-                <label>Descrição:</label>
-                <span id="descricaoProduto"></span>
-            </div>
-            <div>
-                <label>Estoque Atual:</label>
-                <span id="estoqueAtual"></span>
-            </div>
-            <div>
-                <label>Departamento:</label>
-                <span id="departamento"></span>
-            </div>
-            <div>
-                <label>Categoria:</label>
-                <span id="categoria"></span>
-            </div>
-            <div>
-                <label>Subcategoria:</label>
-                <span id="subCategoria"></span>
-            </div>
-            <div>
-                <label>Disponibilidade:</label>
-                <span id="disponibilidade"></span>
-            </div>
-            <div>
-                <label for="localContagem">Local da Contagem:</label>
-                <input type="text" id="localContagem" name="localContagem" required />
-            </div>
-            <div>
-                <label for="quantidadeContada">Quantidade Contada:</label>
-                <input type="number" id="quantidadeContada" name="quantidadeContada" min="0" required />
-            </div>
-            <button type="submit">Registrar Contagem</button>
-        </form>
-    </section>
+
+            <div id="mensagemFeedback"></div>
+        </section>
+    </main>
+
     <script type="module" src="../js/contagem.js"></script>
-    <script type="module" src="../js/camera.js"></script>
 </body>
 </html>
