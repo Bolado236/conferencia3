@@ -65,3 +65,8 @@ btnGerarEtapa.addEventListener('click', async () => {
   alert("Nova etapa criada e ativada!");
   carregaContagens();
 });
+
+document.getElementById('btnNovaContagem').addEventListener('click', () => {
+  const form = document.getElementById('formNovaContagem');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});

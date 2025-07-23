@@ -22,13 +22,13 @@ export function converterXLSXParaJSON(file) {
 
                 const json = rows.map(item => {
                     item.codigoProduto = String(item.codigoProduto || "").trim();
-                    if (typeof item.codigobarras === 'string') {
-                        item.codigobarras = item.codigobarras
+                    if (typeof item.codigoBarras === 'string') {
+                        item.codigoBarras = item.codigoBarras
                             .split(';')
                             .map(s => s.trim())
                             .filter(s => s.length > 0);
                     } else {
-                        item.codigobarras = [];
+                        item.codigoBarras = [];
                     }
                     return item;
                 });

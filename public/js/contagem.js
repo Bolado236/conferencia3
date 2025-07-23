@@ -20,7 +20,12 @@ const divMinhas = document.getElementById('minhasContagensResultado');
 let tipoEtapa = null;
 let produto = null;
 
-// Buscar tipo da etapa atual
+txtTipo.textContent = tipoEtapa;
+if (tipoEtapa === 'subcategoria') {
+  document.getElementById('subcategoriaContainer').style.display = 'block';
+  carregarListaPorSubcategoria();
+}
+
 (async () => {
   const d = await getDoc(doc(db, 'conferencias', loja, 'contagens', contagem, 'etapas', etapa));
   tipoEtapa = d.data().tipo;
@@ -29,11 +34,10 @@ let produto = null;
 
 btnSalvar.onclick = async () => {
   if (!produto) return alert('Busque item');
-  const qtd = parseInt(inputQtd.value);
+  const qtd = parseInt(document.getElementById('inputQuantidade')?.value || '');
   const loc = localSelect.value;
   if (!qtd || !loc) return alert('Informe local e quantidade');
 
-  // validação de listagem na etapa por subcategoria
   if (tipoEtapa === 'subcategoria') {
     const snap = await getDocs(collection(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas`));
     const ok = snap.docs.some(d => d.data().itens.includes(produto.codigoProduto));
@@ -57,18 +61,23 @@ btnSalvar.onclick = async () => {
   inputQtd.focus();
 };
 
-// Buscar produto manual
 busca.onblur = () => {
   buscarProduto(busca.value.trim());
 };
 
-// Função para buscar e exibir o produto
 async function buscarProduto(codigo) {
-  const docRef = doc(db, `conferencias/${loja}/contagens/${contagem}/baseProdutos/${codigo}`);
-  const snap = await getDoc(docRef);
+  const baseRef = collection(db, `conferencias/${loja}/contagens/${contagem}/baseProdutos`);
+  let snap = await getDoc(doc(baseRef, codigo));
+
   if (!snap.exists()) {
-    alert('Produto não encontrado');
-    return;
+    const q = query(baseRef, where('codigoBarras', 'array-contains', codigo));
+    const qSnap = await getDocs(q);
+    if (!qSnap.empty) {
+      snap = qSnap.docs[0];
+    } else {
+      alert('Produto não encontrado');
+      return;
+    }
   }
 
   produto = snap.data();
@@ -84,12 +93,10 @@ async function buscarProduto(codigo) {
     <button id="btnSalvarContagem">Salvar Contagem</button>
   `;
 
-  // Atualiza referência do botão salvar após innerHTML
   document.getElementById('btnSalvarContagem').onclick = btnSalvar.onclick;
   document.getElementById('inputQuantidade').focus();
 }
 
-// Mostrar produtos que o usuário contou no local atual
 btnMinhas.onclick = async () => {
   const loc = localSelect.value;
   if (!loc) return alert('Selecione local');
@@ -104,33 +111,42 @@ btnMinhas.onclick = async () => {
     }).join('') + '</ul>';
 };
 
-// Leitura por câmera (usando QuaggaJS)
-btnCamera.onclick = () => {
-  if (window.Quagga) {
-    Quagga.init({
-      inputStream: {
-        type: "LiveStream",
-        constraints: { width: 640, height: 480, facingMode: "environment" },
-        target: document.querySelector('body')
-      },
-      decoder: { readers: ["ean_reader", "code_128_reader"] }
-    }, err => {
-      if (err) return console.error(err);
-      Quagga.start();
-    });
-
-    Quagga.onDetected(data => {
-      const code = data.codeResult.code;
-      Quagga.stop();
-      buscarProduto(code);
-    });
-  } else {
-    alert("Leitor de câmera não disponível.");
-  }
-};
-
 btnCamera.onclick = () => {
   iniciarLeitorCamera((codigoLido) => {
     buscarProduto(codigoLido);
   });
 };
+
+let listaUsuario = [];
+let listaFinalizada = false;
+
+async function carregarListaPorSubcategoria() {
+  if (tipoEtapa !== 'subcategoria') return;
+  const docRef = doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`);
+  const snap = await getDoc(docRef);
+  if (snap.exists()) {
+    const data = snap.data();
+    listaUsuario = data.itens;
+    listaFinalizada = data.finalizado;
+    exibirListaSubcategoria();
+  } else {
+    alert('Nenhuma lista encontrada para você. Peça ao Admin.');
+  }
+}
+
+function exibirListaSubcategoria() {
+  const container = document.getElementById('listaSubcategoria') || criarListaContainer();
+  container.innerHTML = `
+    <h3>Itens da sua lista (${listaUsuario.length})</h3>
+    <ul>${listaUsuario.map(cod => `<li>${cod}</li>`).join('')}</ul>
+    <button id="btnFinalizarSub">Finalizar Categoria</button>`;
+  document.getElementById('btnFinalizarSub').onclick = finalizarSubcategoria;
+}
+
+async function finalizarSubcategoria() {
+  await setDoc(doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`), {
+    finalizado: true
+  }, { merge: true });
+  listaFinalizada = true;
+  alert('Sua categoria foi finalizada!');
+}
