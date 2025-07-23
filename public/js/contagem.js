@@ -1,4 +1,5 @@
 import { db } from './firebase.js';
+import { iniciarLeitorCamera } from './camera.js';
 import { collection, getDoc, getDocs, doc, addDoc, query, where } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
 
 const usuario = sessionStorage.getItem('usuario');
@@ -126,4 +127,10 @@ btnCamera.onclick = () => {
   } else {
     alert("Leitor de câmera não disponível.");
   }
+};
+
+btnCamera.onclick = () => {
+  iniciarLeitorCamera((codigoLido) => {
+    buscarProduto(codigoLido);
+  });
 };

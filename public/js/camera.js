@@ -1,54 +1,44 @@
-import Quagga from 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.2.6/dist/quagga.min.js';
+export function iniciarLeitorCamera(callbackSucesso) {
+  if (!window.Quagga) {
+    alert("Leitor de câmera não disponível.");
+    return;
+  }
 
-const btnAtivarCamera = document.getElementById('btnAtivarCamera');
-const inputBusca = document.getElementById('inputBusca');
-
-let scannerAtivo = false;
-
-function iniciarScanner() {
-    if (scannerAtivo) return;
-
-    Quagga.init({
-        inputStream: {
-            type: "LiveStream",
-            constraints: {
-                facingMode: "environment",
-                width: { min: 640 },
-                height: { min: 480 },
-                aspectRatio: { min: 1, max: 100 }
-            },
-            target: document.body
-        },
-        decoder: {
-            readers: ["ean_reader", "code_128_reader", "upc_reader"]
-        },
-        locate: true
-    }, (err) => {
-        if (err) {
-            console.error(err);
-            alert('Erro ao iniciar scanner: ' + err);
-            return;
-        }
-        Quagga.start();
-        scannerAtivo = true;
-    });
-
-    Quagga.onDetected((result) => {
-        if (result && result.codeResult && result.codeResult.code) {
-            inputBusca.value = result.codeResult.code;
-            Quagga.stop();
-            scannerAtivo = false;
-            // Disparar evento input para atualizar busca
-            inputBusca.dispatchEvent(new Event('input'));
-        }
-    });
-}
-
-btnAtivarCamera.addEventListener('click', () => {
-    if (scannerAtivo) {
-        Quagga.stop();
-        scannerAtivo = false;
-    } else {
-        iniciarScanner();
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      constraints: {
+        width: 640,
+        height: 480,
+        facingMode: "environment"
+      },
+      target: document.body
+    },
+    decoder: {
+      readers: ["ean_reader", "code_128_reader"]
     }
-});
+  }, err => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    try {
+      const canvas = Quagga.canvas?.ctx?.image?.canvas;
+      if (canvas) {
+        canvas.getContext('2d', { willReadFrequently: true });
+      }
+    } catch (e) {
+      console.warn('Não foi possível ajustar willReadFrequently:', e);
+    }
+
+    Quagga.start();
+  });
+
+  Quagga.onDetected(data => {
+    const code = data.codeResult.code;
+    Quagga.stop();
+    if (callbackSucesso) callbackSucesso(code);
+  });
+}
