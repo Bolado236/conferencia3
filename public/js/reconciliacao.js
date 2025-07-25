@@ -50,3 +50,4 @@ async function carregarRelatorios() {
 document.addEventListener('DOMContentLoaded', () => {
     carregarRelatorios();
 });
+

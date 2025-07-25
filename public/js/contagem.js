@@ -7,6 +7,7 @@ const loja = sessionStorage.getItem('loja');
 const contagem = sessionStorage.getItem('contagemAtual');
 const etapa = sessionStorage.getItem('etapaAtual');
 
+const btnVoltarHub = document.getElementById('btnVoltarHub');
 const localSelect = document.getElementById('selectLocal');
 const busca = document.getElementById('inputBusca');
 const btnSalvar = document.getElementById('btnSalvarContagem');
@@ -150,3 +151,7 @@ async function finalizarSubcategoria() {
   listaFinalizada = true;
   alert('Sua categoria foi finalizada!');
 }
+
+btnVoltarHub.addEventListener('click', () => {
+    window.location.href = 'hub.html';
+});

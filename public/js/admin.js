@@ -3,6 +3,7 @@ import { doc, setDoc, getDocs, collection } from 'https://www.gstatic.com/fireba
 import { converterXLSXParaJSON } from './xlsxConverter.js';
 import { lojas } from './lojas.js';
 
+const btnVoltarHub = document.getElementById('btnVoltarHub');
 const selLoja = document.getElementById('selectLoja');
 const selLojaUsuario = document.getElementById('selectLojaUsuario');
 const selContagemExistente = document.getElementById('selectContagemExistente');
@@ -69,4 +70,8 @@ btnGerarEtapa.addEventListener('click', async () => {
 document.getElementById('btnNovaContagem').addEventListener('click', () => {
   const form = document.getElementById('formNovaContagem');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+btnVoltarHub.addEventListener('click', () => {
+    window.location.href = 'hub.html';
 });
