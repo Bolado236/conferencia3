@@ -142,77 +142,62 @@ async function salvarContagem() {
 
 function exibirListaSubcategoria() {
   const container = document.getElementById('listaSubcategoria');
-  if (!container) {
-    console.warn("⚠️ Elemento #listaSubcategoria não encontrado no DOM!");
+  const infoSub = document.getElementById('infoSubcategoria');
+
+  if (!container || !infoSub) {
+    console.warn("⚠️ Elementos DOM não encontrados.");
     return;
   }
 
-  if (!Array.isArray(listaUsuario)) {
-    console.warn("⚠️ Lista de usuário inválida:", listaUsuario);
-    return;
-  }
+  // Mostra o nome da subcategoria (decodificando "__" de volta para "/")
+  const refSub = sessionStorage.getItem('subcategoriaAtual');
+  const nomeSub = refSub?.replaceAll('__', '/') || 'N/D';
+  infoSub.textContent = `🔎 Subcategoria atual: ${nomeSub}`;
 
-  // Força a visibilidade e atualiza a lista
-  container.style.display = 'block';
+  // Mostra os códigos atribuídos
   container.innerHTML = `
-    <h3>Subcategoria atribuída (${listaUsuario.length} itens)</h3>
+    <h3>${listaUsuario.length} itens atribuídos</h3>
     <ul>
       ${listaUsuario.map(cod => `<li>${cod}</li>`).join('')}
     </ul>
   `;
-
-  console.log("✅ Lista exibida no HTML.");
 }
 
 async function puxarNovaListaSubcategoria() {
+  // Verifica se já tem uma lista atribuída não finalizada
+  const userListRef = doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`);
+  const userSnap = await getDoc(userListRef);
+  if (userSnap.exists() && userSnap.data().finalizado === false) {
+    return alert("Finalize sua atual lista antes de puxar outra.");
+  }
+
+  // Busca pendentes divergentes
   const snap = await getDocs(collection(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/pendentesDistribuir`));
-  
-  let pendenteEscolhido = null;
-  let subId = null;
-  let itensDivergentes = [];
-
-  for (const docSnap of snap.docs) {
-    const dados = docSnap.data();
-    if (dados.finalizada || dados.atribuidoPara) continue;
-
-    const divergentes = dados.itens.filter(cod => dados.status[cod] === 'divergente');
-    if (divergentes.length > 0) {
-      pendenteEscolhido = docSnap;
-      itensDivergentes = divergentes;
-      subId = sanitizeId(docSnap.id);
-      break;
-    }
+  const pendente = snap.docs.find(d => {
+    const ddata = d.data();
+    if (ddata.finalizada || ddata.atribuidoPara) return false;
+    const diverg = ddata.itens.filter(cod => ddata.status[cod] === 'divergente');
+    return diverg.length > 0;
+  });
+  if (!pendente) {
+    return alert('Não há mais subcategorias com itens divergentes disponíveis.');
   }
 
-  if (!pendenteEscolhido) {
-    return alert('Não há mais subcategorias com itens divergentes');
-  }
+  const sub = sanitizeId(pendente.id);
+  const itens = pendente.data().itens.filter(cod => pendente.data().status[cod] === 'divergente');
+  console.log("⭐ Atribuindo nova sub:", sub, itens);
 
-  // Marcar como atribuído no Firestore
-  await setDoc(doc(db, pendenteEscolhido.ref.path), {
-    atribuido: true,
-    atribuidoPara: usuario
-  }, { merge: true });
-
-  // Criar listagem para o usuário com apenas itens divergentes
-  await setDoc(doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`), {
-    subcategoria: subId,
-    itens: itensDivergentes,
+  await setDoc(pendente.ref, { atribuidoPara: usuario }, { merge: true });
+  await setDoc(userListRef, {
+    subCategoria: sub,
+    itens,
     finalizado: false,
     criadaEm: new Date().toISOString()
   });
 
-  // Limpa produto anterior
-  produto = null;
-  infoProduto.style.display = 'none';
-  infoProduto.innerHTML = '';
-
-  // Atualiza interface
-  listaUsuario = itensDivergentes;
+  listaUsuario = itens;
   listaFinalizada = false;
   exibirListaSubcategoria();
-
-  console.log("✅ Nova lista atribuída com divergentes:", subId);
 }
 
 async function atribuirSubcategoriaParaUsuario() {
