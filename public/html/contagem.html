@@ -47,8 +47,10 @@
                 <input type="number" id="inputQuantidade" />
                 <button id="btnSalvarContagem">Salvar Contagem</button>
             </div>
-            <section id="subcategoriaContainer" style="display:none;">
+            <section id="subcategoriaContainer" style="display:none; margin-top: 1.5em;">
+                <h3>Subcategoria Atribuída:</h3>
                 <div id="listaSubcategoria"></div>
+                <button id="btnFinalizarSub" style="margin-top: 1em;">Finalizar Subcategoria</button>
             </section>
             <div id="mensagemFeedback"></div>
         </section>
@@ -57,5 +59,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script type="module" src="../js/camera.js"></script>
     <script type="module" src="../js/contagem.js"></script>
+    <script src="../js/cacheBuster.js"></script>
 </body>
 </html>

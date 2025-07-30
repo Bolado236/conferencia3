@@ -40,6 +40,12 @@
     <h2>Gerar Nova Etapa</h2>
     <select id="selectContagemExistente"></select>
     <button id="btnGerarEtapa">Gerar Nova Etapa</button>
+    <label for="selectTipoEtapa">Tipo de Etapa:</label>
+    <select id="selectTipoEtapa">
+      <option value="">-- Escolha o tipo --</option>
+      <option value="cega">Cega</option>
+      <option value="subcategoria">Subcategoria</option>
+    </select>
     <div id="msgEtapa"></div>
   </section>
 
@@ -74,5 +80,6 @@
   </section>
 
   <script type="module" src="../js/admin.js"></script>
+  <script src="../js/cacheBuster.js"></script>
 </body>
 </html>
