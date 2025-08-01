@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -39,14 +39,24 @@
   <section>
     <h2>Gerar Nova Etapa</h2>
     <select id="selectContagemExistente"></select>
-    <button id="btnGerarEtapa">Gerar Nova Etapa</button>
     <label for="selectTipoEtapa">Tipo de Etapa:</label>
     <select id="selectTipoEtapa">
       <option value="">-- Escolha o tipo --</option>
       <option value="cega">Cega</option>
       <option value="subcategoria">Subcategoria</option>
     </select>
+    <button id="btnGerarEtapa">Gerar Nova Etapa</button>
     <div id="msgEtapa"></div>
+  </section>
+
+  <section>
+    <h2>Controle Subcategorias</h2>
+    <select id="selectLoja"></select>
+    <select id="selectContagemExistente"></select>
+    <select id="selectEtapaExistente"></select>
+    <select id="selectPendentes"></select>
+    <button id="btnFinalizarManual">Finalizar Manual</button>
+    <button id="btnAdicionarItem">Adicionar Item a Sub</button>
   </section>
 
   <section>
@@ -66,7 +76,101 @@
 
       <label for="lojaUsuario">Loja:</label>
       <select id="selectLojaUsuario"></select>
+      <button type="submit">Cadastrar</button>
+    </form>
+  </section>
 
+  <section>
+    <h2>Relatórios</h2>
+    <button id="btnRelatorioItensContados">Itens Contados</button>
+    <button id="btnRelatorioItensNaoContados">Itens Não Contados</button>
+    <button id="btnRelatorioDivergencias">Itens com Divergências</button>
+    <div id="relatorioResultado"></div>
+  </section>
+
+
+  <script type="module" src="../js/admin.js"></script>
+  <script src="../js/cacheBuster.js"></script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin - Conferência de Estoque</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Painel Admin</h1>
+    <button id="btnVoltarHub">Voltar ao Hub</button>
+  </header>
+
+  <section>
+    <h2>Criar Nova Contagem</h2>
+    <button id="btnNovaContagem">Nova Contagem</button>
+    <div id="formNovaContagem" style="display:none;">
+      <label for="selectLoja">Loja:</label>
+      <select id="selectLoja"></select>
+      <label for="inputNomeContagem">Nome da Contagem:</label>
+      <input type="text" id="inputNomeContagem" placeholder="Ex: contagem1" />
+      <label for="inputXLSX">Importar Base (.xlsx):</label>
+      <input type="file" id="inputXLSX" accept=".xlsx" />
+      <label for="selectModelo">Modelo:</label>
+      <select id="selectModelo">
+        <option value="">-- Escolha o modelo --</option>
+        <option value="cega">Cega</option>
+        <option value="subcategoria">Subcategoria</option>
+      </select>
+      <button id="btnCriarContagemCompleta">Confirmar e Criar</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Gerar Nova Etapa</h2>
+    <select id="selectContagemExistente"></select>
+    <label for="selectTipoEtapa">Tipo de Etapa:</label>
+    <select id="selectTipoEtapa">
+      <option value="">-- Escolha o tipo --</option>
+      <option value="cega">Cega</option>
+      <option value="subcategoria">Subcategoria</option>
+    </select>
+    <button id="btnGerarEtapa">Gerar Nova Etapa</button>
+    <div id="msgEtapa"></div>
+  </section>
+
+  <section>
+    <h2>Controle Subcategorias</h2>
+    <label>Loja:</label>
+    <select id="ctlLoja"></select>
+    <label>Contagem:</label>
+    <select id="ctlContagem"></select>
+    <label>Etapa:</label>
+    <select id="ctlEtapa"></select>
+    <label>Pendentes:</label>
+    <select id="ctlPendentes"></select>
+    <button id="btnFinalizarManual">Finalizar Manual</button>
+    <button id="btnAdicionarItem">Adicionar Item a Sub</button>
+    <button id="btnRemoverAtrib">Remover Atribuição</button>
+    <button id="btnAtribuirUsuario">Atribuir a Usuário</button>
+  </section>
+
+  <section>
+    <h2>Cadastro de Usuários</h2>
+    <form id="formCadastroUsuario">
+      <label for="novoUsuario">Usuário:</label>
+      <input type="text" id="novoUsuario" name="novoUsuario" required />
+      <label for="novaSenha">Senha:</label>
+      <input type="password" id="novaSenha" name="novaSenha" required />
+      <label for="tipoUsuario">Tipo:</label>
+      <select id="tipoUsuario" name="tipoUsuario" required>
+        <option value="usuario">Usuário</option>
+        <option value="admin">Admin</option>
+      </select>
+      <label for="selectlojaUsuario">Loja:</label>
+      <select id="selectLojaUsuario"></select>
       <button type="submit">Cadastrar</button>
     </form>
   </section>

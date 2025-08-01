@@ -37,10 +37,9 @@ btnVoltarHub.onclick = () => window.location.href = 'hub.html';
   tipoEtapa = d.data().tipo;
   txtTipo.textContent = tipoEtapa;
 
-  const sec = document.getElementById('formularioContagem');
   if (tipoEtapa === 'subcategoria') {
     document.getElementById('subcategoriaContainer').style.display = 'block';
-    sec.appendChild(btnNovaListaSub);
+    document.getElementById('formularioContagem').appendChild(btnNovaListaSub);
     btnNovaListaSub.onclick = puxarNovaListaSubcategoria;
     btnFinalizar.onclick = finalizarSubcategoria;
     carregarListaPorSubcategoria();
@@ -143,53 +142,42 @@ async function salvarContagem() {
 function exibirListaSubcategoria() {
   const container = document.getElementById('listaSubcategoria');
   const infoSub = document.getElementById('infoSubcategoria');
+  if (!container || !infoSub) return console.warn("⚠️ Elementos DOM não encontrados.");
 
-  if (!container || !infoSub) {
-    console.warn("⚠️ Elementos DOM não encontrados.");
-    return;
-  }
-
-  // Mostra o nome da subcategoria (decodificando "__" de volta para "/")
-  const refSub = sessionStorage.getItem('subcategoriaAtual');
-  const nomeSub = refSub?.replaceAll('__', '/') || 'N/D';
+  const nomeSub = (subCategoriaAtual || '').replaceAll('__', '/');
   infoSub.textContent = `🔎 Subcategoria atual: ${nomeSub}`;
 
-  // Mostra os códigos atribuídos
   container.innerHTML = `
     <h3>${listaUsuario.length} itens atribuídos</h3>
-    <ul>
-      ${listaUsuario.map(cod => `<li>${cod}</li>`).join('')}
-    </ul>
+    <ul>${listaUsuario.map(cod => `<li>${cod}</li>`).join('')}</ul>
   `;
 }
 
 async function puxarNovaListaSubcategoria() {
-  // Verifica se já tem uma lista atribuída não finalizada
-  const userListRef = doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`);
-  const userSnap = await getDoc(userListRef);
+  const userRef = doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`);
+  const userSnap = await getDoc(userRef);
   if (userSnap.exists() && userSnap.data().finalizado === false) {
     return alert("Finalize sua atual lista antes de puxar outra.");
   }
 
-  // Busca pendentes divergentes
   const snap = await getDocs(collection(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/pendentesDistribuir`));
   const pendente = snap.docs.find(d => {
     const ddata = d.data();
     if (ddata.finalizada || ddata.atribuidoPara) return false;
-    const diverg = ddata.itens.filter(cod => ddata.status[cod] === 'divergente');
+    const diverg = ddata.itens.filter(c => ddata.status[c] === 'divergente');
     return diverg.length > 0;
   });
   if (!pendente) {
     return alert('Não há mais subcategorias com itens divergentes disponíveis.');
   }
 
-  const sub = sanitizeId(pendente.id);
-  const itens = pendente.data().itens.filter(cod => pendente.data().status[cod] === 'divergente');
-  console.log("⭐ Atribuindo nova sub:", sub, itens);
+  subCategoriaAtual = sanitizeId(pendente.id);
+  const itens = pendente.data().itens.filter(c => pendente.data().status[c] === 'divergente');
+  console.log("⭐ Atribuindo nova sub:", subCategoriaAtual, itens);
 
   await setDoc(pendente.ref, { atribuidoPara: usuario }, { merge: true });
-  await setDoc(userListRef, {
-    subCategoria: sub,
+  await setDoc(userRef, {
+    subCategoria: subCategoriaAtual,
     itens,
     finalizado: false,
     criadaEm: new Date().toISOString()
@@ -200,47 +188,19 @@ async function puxarNovaListaSubcategoria() {
   exibirListaSubcategoria();
 }
 
-async function atribuirSubcategoriaParaUsuario() {
-  const pendRef = collection(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/pendentesDistribuir`);
-  const snap = await getDocs(pendRef);
-  const disponiveis = snap.docs.filter(d => {
-    const data = d.data();
-    return !data.finalizada && !data.atribuidoPara;
-  });
-
-  if (disponiveis.length === 0) {
-    alert("Nenhuma subcategoria disponível.");
-    return [];
-  }
-
-  const escolhido = disponiveis[0];
-  const sub = escolhido.data().subcategoria || escolhido.id;
-
-  await setDoc(escolhido.ref, { atribuidoPara: usuario }, { merge: true });
-
-  await setDoc(doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`), {
-    itens: escolhido.data().itens,
-    finalizado: false,
-    subcategoria: sub
-  });
-
-  subCategoriaAtual = sub;
-  return escolhido.data().itens;
-}
-
 async function carregarListaPorSubcategoria() {
   const ref = doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`);
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
-    const itens = await atribuirSubcategoriaParaUsuario();
-    if (!itens.length) return;
+    const itens = await puxarNovaListaSubcategoria();
+    if (!itens || !itens.length) return;
     listaUsuario = itens;
   } else {
     const data = snap.data();
-    listaUsuario = data.itens;
+    listaUsuario = data.itens || [];
     listaFinalizada = data.finalizado;
-    subCategoriaAtual = data.subcategoria;
+    subCategoriaAtual = data.subCategoria;
   }
 
   exibirListaSubcategoria();
@@ -249,7 +209,7 @@ async function carregarListaPorSubcategoria() {
 async function finalizarSubcategoria() {
   const userListRef = doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/listagensValidas/${usuario}`);
   const userSnap = await getDoc(userListRef);
-  const sub = userSnap.data().subcategoria;
+  const sub = userSnap.data().subCategoria;
   const subId = sanitizeId(sub);
 
   const pendRef = doc(db, `conferencias/${loja}/contagens/${contagem}/etapas/${etapa}/pendentesDistribuir/${subId}`);
@@ -259,11 +219,9 @@ async function finalizarSubcategoria() {
     finalizadoEm: new Date().toISOString()
   }, { merge: true });
 
-  await setDoc(userListRef, {
-    finalizado: true
-  }, { merge: true });
+  await setDoc(userListRef, { finalizado: true }, { merge: true });
 
   listaFinalizada = true;
-  alert('Sua categoria foi finalizada!');
   btnFinalizar.disabled = true;
+  alert('Sua categoria foi finalizada!');
 }
