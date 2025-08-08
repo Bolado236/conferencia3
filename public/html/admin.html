@@ -177,13 +177,18 @@
 
   <section>
     <h2>Relatórios</h2>
+    <label for="selectContagemRelatorio">Contagem:</label>
+    <select id="selectContagemRelatorio"></select>
+    <button id="btnRelatorioGeral">Relatório Geral</button>
     <button id="btnRelatorioItensContados">Itens Contados</button>
     <button id="btnRelatorioItensNaoContados">Itens Não Contados</button>
     <button id="btnRelatorioDivergencias">Itens com Divergências</button>
     <div id="relatorioResultado"></div>
   </section>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script type="module" src="../js/admin.js"></script>
+  <script type="module" src="../js/relatorios.js"></script>
   <script src="../js/cacheBuster.js"></script>
 </body>
 </html>

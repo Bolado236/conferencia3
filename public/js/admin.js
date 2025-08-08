@@ -237,3 +237,19 @@ btnAtribuirUsuario.onclick = async () => {
 btnVoltarHub.addEventListener('click', () => {
   window.location.href = 'hub.html';
 });
+
+import { gerarRelatorioGeral, exportarXLSX, carregarContagensRelatorio } from './relatorios.js';
+
+window.addEventListener('DOMContentLoaded', () => {
+  carregarContagensRelatorio();
+});
+
+document.getElementById('btnRelatorioGeral').addEventListener('click', async () => {
+  const loja = sessionStorage.getItem('loja');
+  const contagem = document.getElementById('selectContagemRelatorio')?.value;
+  if (!loja || !contagem) return alert('Selecione loja e contagem!');
+
+  const rel = await gerarRelatorioGeral(loja, contagem);
+  const fileName = `Loja_${loja}_contagem_${contagem}`;
+  exportarXLSX(rel, fileName);
+});

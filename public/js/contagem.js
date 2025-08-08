@@ -139,7 +139,21 @@ async function salvarContagem() {
   document.getElementById('inputQuantidade').focus();
 }
 
-function exibirListaSubcategoria() {
+// function exibirListaSubcategoria() {
+//   const container = document.getElementById('listaSubcategoria');
+//   const infoSub = document.getElementById('infoSubcategoria');
+//   if (!container || !infoSub) return console.warn("⚠️ Elementos DOM não encontrados.");
+
+//   const nomeSub = (subCategoriaAtual || '').replaceAll('__', '/');
+//   infoSub.textContent = `🔎 Subcategoria atual: ${nomeSub}`;
+
+//   container.innerHTML = `
+//     <h3>${listaUsuario.length} itens atribuídos</h3>
+//     <ul>${listaUsuario.map(cod => `<li>${cod}</li>`).join('')}</ul>
+//   `;
+// }
+
+async function exibirListaSubcategoria() {
   const container = document.getElementById('listaSubcategoria');
   const infoSub = document.getElementById('infoSubcategoria');
   if (!container || !infoSub) return console.warn("⚠️ Elementos DOM não encontrados.");
@@ -147,9 +161,21 @@ function exibirListaSubcategoria() {
   const nomeSub = (subCategoriaAtual || '').replaceAll('__', '/');
   infoSub.textContent = `🔎 Subcategoria atual: ${nomeSub}`;
 
+  // ⚠️ Buscar as descrições dos produtos
+  const baseRef = collection(db, `conferencias/${loja}/contagens/${contagem}/baseProdutos`);
+  const descricaoMap = {};
+
+  for (const cod of listaUsuario) {
+    const snap = await getDoc(doc(baseRef, cod));
+    descricaoMap[cod] = snap.exists() ? snap.data().descricao : '(sem descrição)';
+  }
+
+  // Montar a lista com códigos e descrições
   container.innerHTML = `
     <h3>${listaUsuario.length} itens atribuídos</h3>
-    <ul>${listaUsuario.map(cod => `<li>${cod}</li>`).join('')}</ul>
+    <ul>
+      ${listaUsuario.map(cod => `<li><strong>${cod}</strong> - ${descricaoMap[cod]}</li>`).join('')}
+    </ul>
   `;
 }
 
